@@ -1,7 +1,6 @@
-const { RestrictedIP } = require("../models/restrictedIP");
-const { User } = require("../models/user");
 const Joi = require("joi");
-
+const { User } = require("../models/user");
+const { RestrictedIP } = require("../models/restrictedIp");
 const WRONG_EMAIL_ATTEMPTS = 3;
 const oneDay = 24 * 60 * 60 * 1000; // One day in milliseconds
 
