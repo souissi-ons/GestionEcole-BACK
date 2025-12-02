@@ -58,6 +58,8 @@ router.get("/", async (req, res) => {
 // Delete a particular levelSubject
 router.delete("/:id", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     const levelSubject = await LevelSubject.findById({
       _id: req.params.id,
     });
@@ -68,8 +70,10 @@ router.delete("/:id", async (req, res) => {
     if (course)
       return res
         .status(409)
-        .send("La matière est associée à un cours. Impossible de la supprimer.");
-    await levelSubject.deleteOne()
+        .send(
+          "La matière est associée à un cours. Impossible de la supprimer."
+        );
+    await levelSubject.deleteOne();
     res.send(levelSubject);
   } catch (error) {
     res.status(500).send(`Internal server error: ${error.message}`);
@@ -79,6 +83,8 @@ router.delete("/:id", async (req, res) => {
 // Update a particular levelSubject
 router.put("/:id", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     const { error } = validateLevelSubject(req.body);
     if (error) return res.status(400).send(error.details[0].message);
     let levelSubject = await LevelSubject.findById(req.params.id);

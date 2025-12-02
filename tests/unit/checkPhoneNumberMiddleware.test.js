@@ -1,87 +1,102 @@
-const { ROLES } = require("../../../front/src/data/constants");
-const checkPhoneNumber = require("../../middlewares/checkPhoneNumber");
-const { User } = require("../../models/user");
-let server;
+// __tests__/unit/checkPhoneNumberMiddleware.test.js
 
-describe("checkPhoneNumber middleware", () => {
-  beforeEach(async () => {
-    server = require("../../index");
+const checkPhoneNumberMiddleware = require("../../middlewares/checkPhoneNumber");
+const { User, ROLES } = require("../../models/user");
+
+// --- Mocking du modèle User ---
+// On dit à Jest de remplacer l'import réel par cette simulation
+jest.mock("../../models/user", () => ({
+  User: {
+    findOne: jest.fn(), // On simule la fonction findOne
+  },
+  ROLES: {
+    // Il faut aussi exporter les constantes si on mock tout le module
+    STUDENT: "Elève",
+    TUTOR: "Tuteur",
+    TEACHER: "Enseignant",
+    ADMIN: "Admin",
+  },
+}));
+
+// --- Groupe de Tests ---
+describe("Tests Unitaires : checkPhoneNumberMiddleware", () => {
+  // --- Mocks ---
+  let req;
+  let res;
+  let next;
+
+  // --- Préparation (avant chaque test) ---
+  beforeEach(() => {
+    jest.clearAllMocks(); // Réinitialise les mocks avant chaque test (TRÈS IMPORTANT!)
+    req = { body: {} }; // Simuler le corps de la requête
+    res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
+    next = jest.fn();
   });
 
-  afterEach(async () => {
-    server.close();
-  });
-
-  it("should return 400 status if not phoneNumber and it's not student", async () => {
-    const req = { body: { role: ROLES.TUTOR, email: "souissi@gmail.com" } };
-    const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
-    const next = jest.fn();
-
-    await checkPhoneNumber(req, res, next);
-
+  // --- Test 1: Champ Requis (Tuteur) ---
+  it("devrait renvoyer 400 si Tuteur et phoneNumber manquant", async () => {
+    // ARRANGE
+    req.body = { role: ROLES.TUTOR, email: "tuteur@app.com" }; // Pas de phoneNumber
+    // ACT
+    await checkPhoneNumberMiddleware(req, res, next);
+    // ASSERT
+    expect(next).not.toHaveBeenCalled(); // Bloqué
+    expect(User.findOne).not.toHaveBeenCalled(); // Pas d'appel BDD
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.send).toHaveBeenCalledWith("Phone number is required");
   });
 
-  it("should call next if not phoneNumber and it's student", async () => {
-    const req = { body: { role: ROLES.STUDENT, email: "souissi@gmail.com" } };
-    const res = { send: jest.fn() };
-    const next = jest.fn();
-
-    await checkPhoneNumber(req, res, next);
-
-    expect(next).toHaveBeenCalled();
+  // --- Test 2: Champ Non Requis (Élève) ---
+  it("devrait appeler next() si Elève et phoneNumber manquant", async () => {
+    // ARRANGE
+    req.body = { role: ROLES.STUDENT, email: "eleve@app.com" }; // Pas de phoneNumber
+    // ACT
+    await checkPhoneNumberMiddleware(req, res, next);
+    // ASSERT
+    expect(next).toHaveBeenCalledTimes(1); // Doit passer
+    expect(User.findOne).not.toHaveBeenCalled(); // Pas de vérif d'unicité
   });
 
-  it("should return 400 status if phoneNumber already exists", async () => {
-    const existingUser = {
-      identifier: "02545678",
-      password: "123456",
-      archived: true,
-      firstName: "Ayoub",
-      lastName: "Rais",
-      email: "ayoubrais@gmail.com",
+  // --- Test 3: Unicité - Numéro déjà pris ---
+  it("devrait renvoyer 400 si phoneNumber existe pour un autre email", async () => {
+    // ARRANGE
+    req.body = {
       role: ROLES.TUTOR,
-      address: {
-        street: "Ouardeyya",
-        city: "Ouardeyya",
-        postalCode: "2000",
-      },
-      gender: "Male",
-      phoneNumber: "90 565 961",
+      email: "nouveau@app.com",
+      phoneNumber: "98 765 432",
     };
-
-    await User.create(existingUser);
-
-    const req = {
-      body: {
-        role: ROLES.TUTOR,
-        email: "souissi@gmail.com",
-        phoneNumber: existingUser.phoneNumber,
-      },
-    };
-    const res = { status: jest.fn().mockReturnThis(), send: jest.fn() };
-    const next = jest.fn();
-
-    await checkPhoneNumber(req, res, next);
-
+    // Simuler que findOne trouve un utilisateur existant
+    User.findOne.mockResolvedValue({ email: "ancien@app.com" });
+    // ACT
+    await checkPhoneNumberMiddleware(req, res, next);
+    // ASSERT
+    // Vérifier que findOne a été appelé avec le numéro nettoyé et l'exclusion de l'email actuel
+    expect(User.findOne).toHaveBeenCalledWith({
+      phoneNumber: "98765432",
+      email: { $ne: "nouveau@app.com" },
+    });
+    expect(next).not.toHaveBeenCalled(); // Bloqué
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.send).toHaveBeenCalledWith("Phone number is already used");
   });
 
-  it("should call next if phoneNumber is valid and not already used", async () => {
-    const req = {
-      body: {
-        role: ROLES.TUTOR,
-        email: "onssouissi@gmail.com",
-        phoneNumber: "97 565 961",
-      },
+  // --- Test 4: Unicité - Numéro existant mais pour le même utilisateur (OK) ---
+  it("devrait appeler next() si phoneNumber existe pour le même email (cas modification)", async () => {
+    // ARRANGE
+    req.body = {
+      role: ROLES.TUTOR,
+      email: "existant@app.com",
+      phoneNumber: "11 22 33 44",
     };
-    const res = { send: jest.fn() };
-    const next = jest.fn();
-
-    await checkPhoneNumber(req, res, next);
-
-    expect(next).toHaveBeenCalled();
+    // Simuler que findOne ne trouve AUCUN AUTRE utilisateur
+    User.findOne.mockResolvedValue(null);
+    // ACT
+    await checkPhoneNumberMiddleware(req, res, next);
+    // ASSERT
+    expect(User.findOne).toHaveBeenCalledWith({
+      phoneNumber: "11223344", // Nettoyé
+      email: { $ne: "existant@app.com" }, // Excluant l'actuel
+    });
+    expect(next).toHaveBeenCalledTimes(1); // Doit passer
   });
 });

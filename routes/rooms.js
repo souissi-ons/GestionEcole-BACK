@@ -1,5 +1,6 @@
 const { Room } = require("../models/room");
 const { Session } = require("../models/session");
+const mongoose = require("mongoose");
 const router = require("express").Router();
 const Joi = require("joi");
 
@@ -40,6 +41,8 @@ router.get("/", async (req, res) => {
 // Update a particular room
 router.put("/:id", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     const schema = Joi.object({
       roomName: Joi.string().required(),
       capacity: Joi.number().required(),
@@ -57,6 +60,7 @@ router.put("/:id", async (req, res) => {
     if (existingRoom) return res.status(400).send("Room already exists");
 
     room.roomName = req.body.roomName;
+    room.capacity = req.body.capacity;
     await room.save();
 
     res.status(200).send(room);
@@ -68,6 +72,8 @@ router.put("/:id", async (req, res) => {
 // Delete a particular romm
 router.delete("/:id", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     const room = await Room.findById({ _id: req.params.id });
     if (!room) return res.status(400).send("Room with given id not found");
 
@@ -75,7 +81,9 @@ router.delete("/:id", async (req, res) => {
     if (session)
       return res
         .status(409)
-        .send("La salle est associée à une séance. Impossible de la supprimer.");
+        .send(
+          "La salle est associée à une séance. Impossible de la supprimer."
+        );
     await room.deleteOne();
     res.send(room);
   } catch (error) {

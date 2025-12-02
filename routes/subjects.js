@@ -2,6 +2,7 @@ const { Subject, validateSubject } = require("../models/subject");
 const { LevelSubject } = require("../models/levelSubject");
 const router = require("express").Router();
 const _ = require("lodash");
+
 const mongoose = require("mongoose");
 
 // Add a subject
@@ -39,6 +40,8 @@ router.get("/", async (req, res) => {
 // Delete a particular subject
 router.delete("/:id", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     const subject = await Subject.findById(req.params.id);
     if (!subject) return res.status(400).send("Matière introuvable.");
     const levelSubject = await LevelSubject.findOne({ subject: req.params.id });
@@ -57,6 +60,9 @@ router.delete("/:id", async (req, res) => {
 // Update a particular subject
 router.put("/:id", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
+
     const { error } = validateSubject(req.body);
     if (error) {
       return res.status(400).send(error.details[0].message);
@@ -82,7 +88,7 @@ router.put("/:id", async (req, res) => {
 
     await subject.save();
 
-    res.status(200).send("Subject has been successfully updated");
+    res.status(200).send(subject);
   } catch (error) {
     res.status(500).send(`Internal server error: ${error.message}`);
   }

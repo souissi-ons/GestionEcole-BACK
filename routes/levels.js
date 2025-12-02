@@ -60,6 +60,8 @@ router.get("/", async (req, res) => {
 // Get a particular level
 router.get("/:id", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     const level = await Level.findOne({ _id: req.params.id });
     if (!level) return res.status(400).send("Level with given id not found");
     res.send(level);
@@ -70,6 +72,8 @@ router.get("/:id", async (req, res) => {
 
 router.get("/:id/subjects", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     const results = await Level.aggregate([
       {
         $match: {
@@ -137,6 +141,8 @@ router.get("/:id/subjects", async (req, res) => {
 // Update a particular level
 router.put("/:id", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     const schema = Joi.object({
       levelName: Joi.string().required(),
     });
@@ -164,6 +170,8 @@ router.put("/:id", async (req, res) => {
 // Delete a particular level
 router.delete("/:id", [authMiddleware, adminMiddleware], async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     const level = await Level.findById({ _id: req.params.id });
     if (!level) return res.status(400).send("Level with given id not found");
     const classe = await Classe.findOne({ level: req.params.id });

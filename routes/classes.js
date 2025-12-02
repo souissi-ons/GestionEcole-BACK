@@ -70,6 +70,8 @@ router.get("/lastYear", async (req, res) => {
 //Get a particular class
 router.get("/:id", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     let classe = await Classe.findById(req.params.id)
       .populate("schoolYear")
       .populate("students");
@@ -83,6 +85,8 @@ router.get("/:id", async (req, res) => {
 // Get all courses of a particular class
 router.get("/:id/courses", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     const classe = await Classe.findById(req.params.id);
     if (!classe) return res.status(404).send("Aucune classe");
     const levelSubject = await LevelSubject.find({
@@ -139,6 +143,8 @@ router.get("/year/:year", async (req, res) => {
 // Get students of a particular class
 router.get("/:id/students", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     const classe = await Classe.findOne({ _id: req.params.id }).populate(
       "students"
     );
@@ -152,6 +158,8 @@ router.get("/:id/students", async (req, res) => {
 // Update students in a particular class
 router.put("/:id/students", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     const schema = Joi.object({
       students: Joi.array().items(Joi.string()),
     });
@@ -170,6 +178,8 @@ router.put("/:id/students", async (req, res) => {
 // Update a particular class
 router.put("/:id", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     const schema = Joi.object({
       classeName: Joi.string().required(),
       capacity: Joi.number().required(),
@@ -206,6 +216,8 @@ router.put("/:id", async (req, res) => {
 // Update timeTable visibility
 router.put("/:id/timetable-visibility", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     const schema = Joi.object({
       timetableVisibility: Joi.boolean().required(),
     });
@@ -224,6 +236,8 @@ router.put("/:id/timetable-visibility", async (req, res) => {
 // Delete a particular class
 router.delete("/:id", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+      return res.status(400).send("Invalid ID format");
     const classe = await Classe.findByIdAndDelete(req.params.id);
     if (!classe) res.status(400).send("Class with given id not found");
 

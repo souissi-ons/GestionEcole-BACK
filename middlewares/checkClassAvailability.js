@@ -45,13 +45,13 @@ function reservedMessage(session) {
   const { startTime, endTime, week, classe, subject, group } = session;
   if (week === "both") {
     if (group === "both")
-      return `La classe ${classe.classeName} a déja un cours de ${subject.subject} pendant cet intervalle de temps.
+      return `La classe ${classe.classeName} a déja un cours de ${subject.subjectName} pendant cet intervalle de temps.
   de ${startTime}h à ${endTime}h.`;
     else
-      return `La groupe ${group} de la ${classe.classeName} a déja un cours de ${subject.subject} pendant cet intervalle de temps.
+      return `La groupe ${group} de la ${classe.classeName} a déja un cours de ${subject.subjectName} pendant cet intervalle de temps.
   de ${startTime}h à ${endTime}h.`;
   }
-  return `La classe ${classe.classeName} a déja un cours de ${subject.subject} pendant cet intervalle de temps en semaine ${week}.
+  return `La classe ${classe.classeName} a déja un cours de ${subject.subjectName} pendant cet intervalle de temps en semaine ${week}.
   de ${startTime}h à ${endTime}h.`;
 }
 

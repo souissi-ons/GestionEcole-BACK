@@ -11,7 +11,7 @@ module.exports = async function (req, res, next) {
     return res.status(400).send("Vous êtes bloqué !");
 
   const user = await User.findOne({
-    archived: false,
+    // archived: false,
     $or: [
       { email: req.body.emailOrNumber.toLowerCase() },
       { phoneNumber: req.body.emailOrNumber.replace(/\s+/g, "") },
